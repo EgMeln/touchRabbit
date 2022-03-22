@@ -1,0 +1,32 @@
+version: '3'
+
+services:
+  rabbitmq:
+    image: rabbitmq:latest
+    container_name: rabbimq
+    ports:
+      - "5672:5672"
+  postgres:
+    image: postgres
+    ports:
+      - "5445:5432"
+    environment:
+      POSTGRES_DB: "egormelnikov"
+      POSTGRES_USER: "egormelnikov"
+      POSTGRES_PASSWORD: "54236305"
+
+  producer:
+    image: rabbitprod:latest
+    environment:
+      rabbitURL: amqp://guest:guest@rabbitmq:5672
+    depends_on:
+      - rabbitmq
+
+  consumer:
+    image: rabbitcons:latest
+    depends_on:
+        - rabbitmq
+        - postgres
+    environment:
+      rabbitURL: amqp://guest:guest@rabbitmq:5672
+      postgresURL: postgres://egormelnikov:54236305@postgres:5432/egormelnikov
