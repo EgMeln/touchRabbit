@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"fmt"
 	"github.com/jackc/pgx/v4/pgxpool"
 	log "github.com/sirupsen/logrus"
 )
@@ -10,13 +11,13 @@ type PostgresConnection struct {
 	Conn *pgxpool.Pool
 }
 
-func GetPostgresConnection(postgresURL string) *PostgresConnection {
-	conn, err := pgxpool.Connect(context.Background(), postgresURL)
+func GetPostgresConnection(ctx context.Context, postgresURL string) (*PostgresConnection, error) {
+	conn, err := pgxpool.Connect(ctx, postgresURL)
 	log.Infof("DB URL: %s", postgresURL)
 	if err != nil {
-		log.Fatalf("Error connection to DB %v", err)
+		return nil, fmt.Errorf("error connection to DB %v", err)
 	}
 	log.Println("successfully connected")
 
-	return &PostgresConnection{Conn: conn}
+	return &PostgresConnection{Conn: conn}, nil
 }

@@ -8,7 +8,10 @@ import (
 
 func main() {
 	rabbitURL := os.Getenv("rabbitURL")
-	prod := producer.NewProducer(&rabbitURL)
+	prod, err := producer.NewProducer(&rabbitURL)
+	if err != nil {
+		log.Fatalf("producer error %v", err)
+	}
 	defer func() {
 		if err := prod.Conn.Close(); err != nil {
 			log.Fatalf("Failed to close connect to RabbitMQ %v", err)
@@ -18,6 +21,9 @@ func main() {
 		}
 	}()
 	log.Println("producer successfully created")
-	prod.ProduceMessages()
+	err = prod.ProduceMessages()
+	if err != nil {
+		log.Fatalf("produce messages error %v", err)
+	}
 	log.Println("successfully send messages")
 }

@@ -15,45 +15,45 @@ type Producer struct {
 	Ch   *amqp.Channel
 }
 
-func NewProducer(url *string) *Producer {
+func NewProducer(url *string) (*Producer, error) {
 	conn, err := amqp.Dial(*url)
 	if err != nil {
-		log.Fatalf("Failed to connect to RabbitMQ %v", err)
+		return nil, fmt.Errorf("failed to connect to RabbitMQ %v", err)
 	}
 	ch, err := conn.Channel()
 	if err != nil {
-		log.Fatalf("Failed to open a channel %v", err)
+		return nil, fmt.Errorf("failed to open a channel %v", err)
+
 	}
-	return &Producer{Conn: conn, Ch: ch}
+	return &Producer{Conn: conn, Ch: ch}, nil
 }
 
-func (prod Producer) ProduceMessages() {
+func (prod Producer) ProduceMessages() error {
 	q, err := prod.Ch.QueueDeclare(
 		"myQueue", // name
-		false,     // durable
+		true,      // durable
 		false,     // delete when unused
 		false,     // exclusive
 		false,     // no-wait
 		nil,       // arguments
 	)
 	if err != nil {
-		log.Fatalf("Failed to declare a queue %v", err)
+		return fmt.Errorf("failed to declare a queue %v", err)
 	}
 	log.Printf("Start producing")
 	t := time.Now()
 	for i := 0; ; i++ {
 		key := fmt.Sprintf("Key-%d", i)
 		message := "this is message " + strconv.Itoa(i)
-		if err != nil {
-			log.Fatalf("marshal error")
-		}
+
 		msg := model.RabbitMessage{
 			Key:     key,
 			Message: message,
 		}
-		jsonMsg, err := json.Marshal(msg)
-		if err != nil {
-			log.Fatalf("marshal error")
+		jsonMsg, ok := json.Marshal(msg)
+		if ok != nil {
+			return fmt.Errorf("marshal error %v", err)
+
 		}
 		err = prod.Ch.Publish(
 			"",
@@ -65,7 +65,8 @@ func (prod Producer) ProduceMessages() {
 				Body:        jsonMsg,
 			})
 		if err != nil {
-			log.Fatalf("Failed to publish a message %v", err)
+			return fmt.Errorf("failed to publish a message %v", err)
+
 		} else {
 			log.Info("produced", key)
 		}
@@ -73,6 +74,7 @@ func (prod Producer) ProduceMessages() {
 			log.Info("send 2000 messages")
 			log.Info(time.Since(t))
 			t = time.Now()
+			time.Sleep(1 * time.Second)
 		}
 	}
 }
